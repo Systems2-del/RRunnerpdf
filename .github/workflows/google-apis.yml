@@ -1,4 +1,4 @@
-name: Dispatch Details: Compress & Upload PDFs
+name: Dispatch Details:Compress & Upload PDFs
 
 on:
   workflow_dispatch:
