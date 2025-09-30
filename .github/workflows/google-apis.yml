@@ -1,0 +1,57 @@
+name: Dispatch Details: Compress & Upload PDFs
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_rows:
+        description: "Max rows to process (from START_ROW)"
+        required: false
+        default: "10000"
+
+permissions:
+  contents: read
+
+jobs:
+  run-google-job:
+    runs-on: ubuntu-latest
+    env:
+      # ----- REQUIRED SECRETS -----
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+
+      # ----- VARIABLES (non-sensitive) -----
+      SHEET_ID: ${{ vars.SHEET_ID }}
+      SHEET_NAME: ${{ vars.SHEET_NAME }}
+      DEST_FOLDER_ID: ${{ vars.DEST_FOLDER_ID }}
+      START_ROW: ${{ vars.START_ROW || 2 }}
+      MAX_ROWS_TO_CHECK: ${{ github.event.inputs.max_rows }}
+
+      # Tuning (A4/1MB and compression knobs)
+      MAX_TARGET_BYTES: "1048576"     # 1 MB
+      TARGET_WIDTH_PT: "595"          # A4
+      TARGET_HEIGHT_PT: "842"
+      START_DPI: "150"
+      MIN_DPI: "72"
+      START_JPEG_QUALITY: "85"
+      MIN_JPEG_QUALITY: "30"
+      DPI_STEP: "10"
+      QUALITY_STEP: "5"
+      DOWNLOAD_TIMEOUT: "60"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run compressor
+        run: python google_job.py
